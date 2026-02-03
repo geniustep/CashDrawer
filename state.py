@@ -73,10 +73,15 @@ class AppState:
 
         # Rate limiter: 10 drawer opens per minute
         self.drawer_rate_limiter = RateLimiter(max_calls=10, period_seconds=60.0)
+        
+        # Rate limiter: 30 receipt prints per minute (more generous)
+        self.receipt_rate_limiter = RateLimiter(max_calls=30, period_seconds=60.0)
 
         # Counters
         self.total_opens: int = 0
         self.today_opens: int = 0
+        self.total_prints: int = 0
+        self.today_prints: int = 0
         self._today_date: str = time.strftime("%Y-%m-%d")
 
     @property
@@ -108,13 +113,19 @@ class AppState:
         )
         with self._lock:
             self._history.appendleft(entry)
-            if status == "ok" and action == "OPEN_DRAWER":
-                self.total_opens += 1
-                today = time.strftime("%Y-%m-%d")
-                if today != self._today_date:
-                    self._today_date = today
-                    self.today_opens = 0
-                self.today_opens += 1
+            today = time.strftime("%Y-%m-%d")
+            if today != self._today_date:
+                self._today_date = today
+                self.today_opens = 0
+                self.today_prints = 0
+            
+            if status == "ok":
+                if action == "OPEN_DRAWER":
+                    self.total_opens += 1
+                    self.today_opens += 1
+                elif action in ("PRINT_RECEIPT", "PRINT_RAW", "TEST_PRINT"):
+                    self.total_prints += 1
+                    self.today_prints += 1
         log.info("History: %s | %s | %s | %s", action, source, status, detail)
 
     def get_history(self, limit: int = 50) -> list[dict]:
@@ -141,6 +152,8 @@ class AppState:
             "uptime_seconds": round(self.uptime_seconds),
             "total_opens": self.total_opens,
             "today_opens": self.today_opens,
+            "total_prints": self.total_prints,
+            "today_prints": self.today_prints,
             "last_operation": last_entry,
         }
 

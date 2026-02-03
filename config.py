@@ -7,7 +7,7 @@ from logger import get_logger
 
 log = get_logger("config")
 
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 APP_DIR = Path(r"C:\ProgramData\GeniusStep\CashDrawerAgent")
 CFG_PATH = APP_DIR / "config.json"
 

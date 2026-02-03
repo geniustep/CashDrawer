@@ -4,7 +4,7 @@ import json
 import time
 import websockets
 from config import load_config
-from printer_raw import open_drawer
+from printer_raw import open_drawer, print_receipt, print_raw_receipt
 from state import app_state
 from logger import get_logger
 
@@ -65,6 +65,12 @@ async def run_ws():
 
                     if cmd == "OPEN_DRAWER":
                         await _handle_open_drawer(ws, cfg)
+
+                    elif cmd == "PRINT_RECEIPT":
+                        await _handle_print_receipt(ws, data, cfg)
+
+                    elif cmd == "PRINT_RAW":
+                        await _handle_print_raw(ws, data, cfg)
 
                     elif cmd == "PING":
                         await ws.send(json.dumps({
@@ -144,6 +150,104 @@ async def _handle_open_drawer(ws, cfg):
         }))
         app_state.add_history(
             action="OPEN_DRAWER", source="websocket",
+            status="error", detail=str(e),
+        )
+
+
+async def _handle_print_receipt(ws, data, cfg):
+    """معالجة أمر طباعة الإيصال."""
+    # Rate limiting check
+    if not app_state.receipt_rate_limiter.allow():
+        log.warning("Rate limit exceeded for PRINT_RECEIPT")
+        await ws.send(json.dumps({
+            "type": "ACK", "cmd": "PRINT_RECEIPT",
+            "status": "ERR", "error": "Rate limit exceeded",
+        }))
+        app_state.add_history(
+            action="PRINT_RECEIPT", source="websocket",
+            status="error", detail="Rate limit exceeded",
+        )
+        return
+
+    try:
+        receipt_data = data.get("receipt_data", {})
+        paper_width = data.get("paper_width", 48)
+        encoding = data.get("encoding", "cp437")
+        cut_after = data.get("cut_after", True)
+        open_drawer_flag = data.get("open_drawer", False)
+        
+        print_receipt(
+            printer_name=cfg.printer_name,
+            receipt_data=receipt_data,
+            paper_width=paper_width,
+            encoding=encoding,
+            cut_after=cut_after,
+            open_drawer=open_drawer_flag,
+            drawer_pin=cfg.drawer_pin,
+        )
+        
+        await ws.send(json.dumps({
+            "type": "ACK", "cmd": "PRINT_RECEIPT", "status": "OK",
+        }))
+        log.info("Receipt printed OK via WebSocket")
+        app_state.add_history(
+            action="PRINT_RECEIPT", source="websocket", status="ok",
+            detail=f"Order: {receipt_data.get('name', 'N/A')}",
+        )
+    except Exception as e:
+        log.error("Receipt print error: %s", e)
+        await ws.send(json.dumps({
+            "type": "ACK", "cmd": "PRINT_RECEIPT",
+            "status": "ERR", "error": str(e),
+        }))
+        app_state.add_history(
+            action="PRINT_RECEIPT", source="websocket",
+            status="error", detail=str(e),
+        )
+
+
+async def _handle_print_raw(ws, data, cfg):
+    """معالجة أمر طباعة بيانات خام."""
+    # Rate limiting check
+    if not app_state.receipt_rate_limiter.allow():
+        log.warning("Rate limit exceeded for PRINT_RAW")
+        await ws.send(json.dumps({
+            "type": "ACK", "cmd": "PRINT_RAW",
+            "status": "ERR", "error": "Rate limit exceeded",
+        }))
+        app_state.add_history(
+            action="PRINT_RAW", source="websocket",
+            status="error", detail="Rate limit exceeded",
+        )
+        return
+
+    try:
+        raw_data = data.get("data", "")
+        encoding = data.get("encoding", "utf-8")
+        cut_after = data.get("cut_after", True)
+        
+        print_raw_receipt(
+            printer_name=cfg.printer_name,
+            raw_data=raw_data,
+            encoding=encoding,
+            cut_after=cut_after,
+        )
+        
+        await ws.send(json.dumps({
+            "type": "ACK", "cmd": "PRINT_RAW", "status": "OK",
+        }))
+        log.info("Raw data printed OK via WebSocket")
+        app_state.add_history(
+            action="PRINT_RAW", source="websocket", status="ok",
+        )
+    except Exception as e:
+        log.error("Raw print error: %s", e)
+        await ws.send(json.dumps({
+            "type": "ACK", "cmd": "PRINT_RAW",
+            "status": "ERR", "error": str(e),
+        }))
+        app_state.add_history(
+            action="PRINT_RAW", source="websocket",
             status="error", detail=str(e),
         )
 
