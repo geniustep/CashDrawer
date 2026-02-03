@@ -17,6 +17,12 @@ build_exe_options = {
         "win32con",
         "json",
         "pathlib",
+        "logging",
+        "signal",
+        "webbrowser",
+        "time",
+        "collections",
+        "dataclasses",
     ],
     "includes": [
         "app",
@@ -24,6 +30,9 @@ build_exe_options = {
         "ws_client",
         "printer_raw",
         "config",
+        "logger",
+        "state",
+        "dashboard",
     ],
     "excludes": ["tkinter", "matplotlib", "numpy", "pandas"],
     "include_files": [],
@@ -33,7 +42,7 @@ build_exe_options = {
 # إعدادات التنفيذ
 base = None
 if sys.platform == "win32":
-    base = "Win32GUI"  # بدون نافذة console
+    base = "Win32GUI"
     # استخدم base = None إذا أردت رؤية نافذة console
 
 executables = [
@@ -41,13 +50,13 @@ executables = [
         "app.py",
         base=base,
         target_name="GeniusStepCashDrawerAgent.exe",
-        icon=None,  # يمكنك إضافة مسار أيقونة .ico هنا
+        icon=None,
     )
 ]
 
 setup(
     name="GeniusStep CashDrawer Agent",
-    version="1.0.0",
+    version="2.0.0",
     description="وكيل GeniusStep للتحكم في درج النقدية",
     options={"build_exe": build_exe_options},
     executables=executables,

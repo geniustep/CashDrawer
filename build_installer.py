@@ -1,7 +1,6 @@
 # build_installer.py
 # سكريبت لبناء ملف قابل للتثبيت على Windows
 import PyInstaller.__main__
-import sys
 import os
 
 # إعدادات البناء
@@ -13,18 +12,15 @@ icon_path = None  # يمكنك إضافة مسار أيقونة .ico هنا
 args = [
     main_script,
     '--name', app_name,
-    '--onefile',  # ملف واحد قابل للتنفيذ
-    '--windowed',  # بدون نافذة console (استخدم --console إذا أردت رؤية السجلات)
-    '--clean',  # تنظيف الملفات المؤقتة
-    '--noconfirm',  # تأكيد تلقائي
+    '--onefile',
+    '--console',  # نافذة console لرؤية السجلات
+    '--clean',
+    '--noconfirm',
 ]
 
 # إذا كان هناك أيقونة
 if icon_path and os.path.exists(icon_path):
     args.extend(['--icon', icon_path])
-
-# إضافة ملفات البيانات إذا لزم الأمر
-# args.extend(['--add-data', 'path/to/data;data'])
 
 # إضافة مكتبات مخفية
 hidden_imports = [
@@ -42,12 +38,23 @@ hidden_imports = [
     'websockets',
     'pydantic',
     'fastapi',
+    'starlette',
+    'h11',
+    'click',
+    'anyio',
+    'logger',
+    'config',
+    'state',
+    'dashboard',
+    'web_ui',
+    'ws_client',
+    'printer_raw',
 ]
 
 for imp in hidden_imports:
     args.extend(['--hidden-import', imp])
 
 # تشغيل PyInstaller
-print(f"جاري بناء {app_name}...")
+print(f"Building {app_name}...")
 PyInstaller.__main__.run(args)
-print(f"تم البناء بنجاح! الملف موجود في مجلد dist/")
+print(f"Build complete! Output: dist/{app_name}.exe")
