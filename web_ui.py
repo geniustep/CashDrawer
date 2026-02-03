@@ -1,5 +1,6 @@
 # web_ui.py
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 import win32print
 from config import (
@@ -14,6 +15,15 @@ from logger import get_logger
 log = get_logger("web_ui")
 
 app = FastAPI(title="GeniusStep CashDrawer Agent", version=APP_VERSION)
+
+# CORS: السماح لطلبات من واجهة Odoo POS (متصفح على نفس الجهاز أو خادم Odoo)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 
 # ── Dashboard ──
