@@ -1,6 +1,6 @@
 # web_ui.py
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 import win32print
 from config import (
     load_config, save_config, AgentConfig,
@@ -22,6 +22,12 @@ app = FastAPI(title="GeniusStep CashDrawer Agent", version=APP_VERSION)
 def dashboard():
     """صفحة لوحة التحكم الرئيسية."""
     return get_dashboard_html()
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """تفادي 404 عند طلب المتصفح للأيقونة."""
+    return Response(status_code=204)
 
 
 # ── API Endpoints ──
@@ -131,3 +137,11 @@ def get_history(limit: int = 50):
 def get_version():
     """إرجاع إصدار التطبيق."""
     return {"version": APP_VERSION}
+
+
+# ── تجنب 404: توجيه أي مسار غير معرّف إلى الصفحة الرئيسية ──
+
+@app.get("/{full_path:path}", response_class=HTMLResponse, include_in_schema=False)
+def catch_all(full_path: str):
+    """أي مسار غير معرّف (مثل /dashboard أو /index) يعيد لوحة التحكم."""
+    return get_dashboard_html()

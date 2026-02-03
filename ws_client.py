@@ -29,9 +29,10 @@ async def run_ws():
 
         try:
             log.info("Connecting to %s ...", cfg.wss_url)
+            # استخدم additional_headers (مطلوب في websockets 11+)
             async with websockets.connect(
                 cfg.wss_url,
-                extra_headers=headers,
+                additional_headers=headers,
                 ping_interval=20,
                 ping_timeout=20,
             ) as ws:
